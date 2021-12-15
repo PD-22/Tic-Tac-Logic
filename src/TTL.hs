@@ -1,20 +1,26 @@
-module TTL (lineSolver) where
-
--- Rules
+-- Rules:
 -- No Triples
 -- No Dublicate Lines
 -- Balanced X O amount
 
--- TODO: add tests
+-- TODO:
+-- do the same on vertical lines
+--  transpose
+-- use datatype?
+-- add tests
 
--- try each helper until no change
+module TTL (lineSolver) where
+
 lineSolver :: String -> String
-lineSolver = avoidTriple1 . avoidTriple2
+lineSolver = doWhileChanges (avoidTriple1 . avoidTriple2)
 
-type Grid = [String]
-
--- TODO fix this avoidTriple1: .o.xxo.. .ooxxo..
--- repeat until doesnt change
+doWhileChanges :: Eq t => (t -> t) -> t -> t
+doWhileChanges f oldValue =
+  if newValue == oldValue
+    then oldValue
+    else doWhileChanges f newValue
+  where
+    newValue = f oldValue
 
 avoidTriple1 :: String -> String
 avoidTriple1 [] = []
