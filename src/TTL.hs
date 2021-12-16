@@ -3,19 +3,20 @@
 -- No Dublicate Lines
 -- Balanced X O amount
 
--- TODO:
--- use datatype?
--- add tests
-
 module TTL (gridSolver, lineSolver) where
 
 import Helpers (applyFunctions, doWhileChanges, transpose)
-import Solvers (avoidTriple1, avoidTriple2)
+import Solvers (avoidTriple1, avoidTriple2, completeLine)
 
 lineSolver :: String -> String
-lineSolver = doWhileChanges $ applyFunctions [avoidTriple1, avoidTriple2]
+lineSolver =
+  doWhileChanges $
+    applyFunctions
+      [ avoidTriple1,
+        avoidTriple2,
+        completeLine
+      ]
 
--- accept only even
 gridSolver :: [String] -> [String]
 gridSolver g = doWhileChanges callOnRowsCols g
   where
