@@ -1,11 +1,5 @@
 const fs = require('fs')
-const PATH = './gen_res.txt'
-
-// TODO: make solvable lines
-/* 
-  fill line completely
-  remove random dots
-*/
+const PATH = './tic_tac.txt'
 
 function generate(lineNum, lineLen) {
   // odd numbers not allowed

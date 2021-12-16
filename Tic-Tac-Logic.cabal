@@ -25,6 +25,8 @@ source-repository head
 
 library
   exposed-modules:
+      Helpers
+      Solvers
       TTL
   other-modules:
       Paths_Tic_Tac_Logic
