@@ -5,8 +5,8 @@
 
 module TTL (gridSolver, lineSolver) where
 
-import Helpers (applyFunctions, doWhileChanges, transpose)
-import Solvers (avoidTriple1, avoidTriple2, completeLine)
+import Helpers (applyFunctions, doWhileChanges, replaceDot, transpose)
+import Solvers (avoidTriple1, avoidTriple2, avoidTriple3, completeLine, avoidDuplication)
 
 lineSolver :: String -> String
 lineSolver =
@@ -14,11 +14,13 @@ lineSolver =
     applyFunctions
       [ avoidTriple1,
         avoidTriple2,
+        avoidTriple3,
         completeLine
       ]
 
 gridSolver :: [String] -> [String]
-gridSolver g = doWhileChanges callOnRowsCols g
+gridSolver g = doWhileChanges graphSolvers g
   where
-    callOnRowsCols g = transpose $ rowSolver $ transpose $ rowSolver g
+    graphSolvers = applyFunctions [lineSolvers, avoidDuplication]
+    lineSolvers g = transpose $ rowSolver $ transpose $ rowSolver g
     rowSolver = map lineSolver

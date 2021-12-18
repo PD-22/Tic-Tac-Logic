@@ -1,7 +1,7 @@
 module Main where
 
 import Control.Monad (unless)
-import TTL (gridSolver, lineSolver)
+import TTL (gridSolver)
 
 main :: IO ()
 main = do

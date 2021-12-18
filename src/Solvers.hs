@@ -1,6 +1,16 @@
 module Solvers where
 
-import Helpers (countRemainXO)
+import GHC.ST (STret)
+import Helpers
+  ( countRemainXO,
+    doWhileChanges,
+    hasTriple,
+    listCombs,
+    replace,
+    replaceDot,
+    spreadOnDots,
+    transpose,
+  )
 
 avoidTriple1 :: String -> String
 avoidTriple1 [] = []
@@ -20,21 +30,102 @@ avoidTriple2 ('x' : '.' : 'x' : bs) = 'x' : 'o' : avoidTriple2 ('x' : bs)
 avoidTriple2 ('o' : '.' : 'o' : bs) = 'o' : 'x' : avoidTriple2 ('o' : bs)
 avoidTriple2 (c : cs) = c : avoidTriple2 cs
 
--- .x..oxxo  1x 2o
+-- .x..oxxo
+-- TODO:
+-- Test
 -- more examples
--- avoidTriple3 :: String -> String
--- avoidTriple3 [] = []
--- avoidTriple3 [a] = [a]
--- avoidTriple3 [a, b] = [a, b]
--- avoidTriple3 l = if (x == 1) && (o == 2) then place 'x' else l
---   where
---     (x, o) = countRemainXO l
+--  what if unsolvable?
+-- maybe not 1x 2o or 2x 1o cases only
+-- spread all combsToSpread to l
+
+-- unsolvable tells that x in (1x,2o) should be o
+-- example: if not xoo spread o..
+avoidTriple3 :: String -> String
+avoidTriple3 [] = []
+avoidTriple3 l
+  | charToGuess == 'N' = l
+  | null combsToSpread = l
+  | otherwise = spreadOnDots (head combsToSpread) l
+  where
+    (rx, ro) = countRemainXO l
+    charToGuess
+      | rx == 1 && ro == 2 = 'x'
+      | ro == 1 && rx == 2 = 'o'
+      | otherwise = 'N'
+    otherChar
+      | charToGuess == 'x' = 'o'
+      | charToGuess == 'o' = 'x'
+      | otherwise = 'N'
+    combStart = replicate rx 'x' ++ replicate ro 'o'
+    combs = listCombs combStart
+    invalidCombs =
+      map snd $
+        filter fst $
+          map (\comb -> (hasTriple (spreadOnDots comb l), comb)) combs
+    combsToSpread =
+      map (replace 'x' 'o' . replace otherChar '.') invalidCombs
 
 completeLine :: String -> String
 completeLine l
-  | (x == 1) && (o == 0) = replaceDot 'x' l
-  | (x == 0) && (o == 1) = replaceDot 'o' l
+  | x == 1 && o == 0 = replaceDot 'x' l
+  | x == 0 && o == 1 = replaceDot 'o' l
   | otherwise = l
   where
-    replaceDot r = map (\c -> if c == '.' then r else c)
     (x, o) = countRemainXO l
+
+-- -- -- -- -- -- -- -- -- -- -- --
+
+avoidDuplication :: [String] -> [String]
+avoidDuplication = doWhileChanges avoidDupHelp1
+
+avoidDupHelp1 :: [String] -> [String]
+avoidDupHelp1 g = transpose $ avoidDupHelp2 $ transpose $ avoidDupHelp2 g
+
+avoidDupHelp2 :: [String] -> [String]
+avoidDupHelp2 g = solveRows g
+  where
+    solveRows = map linesMap
+    linesMap l =
+      let remainDots = countRemainDot l
+          otherLines = filter (/= l) g
+       in if remainDots == 2
+            then tryDupSolve l otherLines
+            else l
+
+tryDupSolve :: String -> [String] -> String
+tryDupSolve ls ol =
+  if null linesToCompare
+    then ls
+    else solveDup ls lineToCompare
+  where
+    linesToCompare = filter (couldBeIdentical ls) ol
+    lineToCompare = head linesToCompare
+
+couldBeIdentical :: [Char] -> String -> Bool
+couldBeIdentical ls lc = some (== lc) allVariants
+  where
+    allVariants = map (`spreadOnDots` ls) spreads
+    spreads = listCombs (replicate rx 'x' ++ replicate ro 'o')
+    (rx, ro) = countRemainXO ls
+
+some :: Foldable t => (a -> Bool) -> t a -> Bool
+some f = foldr ((||) . f) False
+
+solveDup :: String -> String -> String
+solveDup lToSolve lToCompare = spreadOnDots correctSpread lToSolve
+  where
+    reverseChar c
+      | c == 'x' = 'o'
+      | c == 'o' = 'x'
+      | otherwise = '.'
+    opposite s = map reverseChar s
+    correctSpread = opposite (head (map fst invalidSpreads))
+    invalidSpreads = filter (\(sprd, res) -> res == lToCompare) spreadResMap
+    spreadResMap = map (\sprd -> (sprd, spreadOnDots sprd lToSolve)) possibleSpreads
+    possibleSpreads = listCombs (replicate rx 'x' ++ replicate ro 'o')
+    (rx, ro) = countRemainXO lToSolve
+
+countRemainDot :: String -> Int
+countRemainDot l = rx + ro
+  where
+    (rx, ro) = countRemainXO l

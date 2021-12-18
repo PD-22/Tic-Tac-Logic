@@ -21,10 +21,29 @@ countRemainXO l = (shouldBe - xNum, shouldBe - oNum)
   where
     shouldBe = length l `div` 2
     (xNum, oNum) = foldl countXO (0, 0) l
+    countXO (x, o) char = case char of
+      'x' -> (x + 1, o)
+      'o' -> (x, o + 1)
+      _ -> (x, o)
 
-countXO :: (Int, Int) -> Char -> (Int, Int)
-countXO (x, o) char =
-  case char of
-    'x' -> (x + 1, o)
-    'o' -> (x, o + 1)
-    _ -> (x, o)
+replaceDot :: Char -> String -> String
+replaceDot = replace '.'
+
+replace :: Eq b => b -> b -> [b] -> [b]
+replace a b = map (\c -> if c == a then b else c)
+
+spreadOnDots :: String -> String -> String
+spreadOnDots [] l = l
+spreadOnDots _ [] = []
+spreadOnDots rs@(rh : rt) (lh : lt) =
+  if lh == '.'
+    then rh : spreadOnDots rt lt
+    else lh : spreadOnDots rs lt
+
+hasTriple :: String -> Bool
+hasTriple [] = False
+hasTriple [a] = False
+hasTriple [a, b] = False
+hasTriple ('x' : 'x' : 'x' : _) = True
+hasTriple ('o' : 'o' : 'o' : _) = True
+hasTriple (c : cs) = hasTriple cs
