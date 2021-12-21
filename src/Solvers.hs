@@ -3,19 +3,24 @@ module Solvers where
 import GHC.ST (STret)
 import Helpers
   ( combsXO,
-    countRemainXO,
     doWhileChanges,
+    fillVariants,
     hasTriple,
-    listCombs,
+    listCommons,
     mergeCombs,
+    oneHasOtherNot,
+    rearrangeCombs,
+    remainXO,
     replace,
     replaceDot,
+    some,
     spreadOnDots,
     transpose,
   )
 
--- TODO: might need to generalize some solvers
--- for example in avoidTriple3 use one X and more than one O cases
+-- TODO
+-- generalize some solvers
+-- use fillVariants
 
 avoidTriple1 :: String -> String
 avoidTriple1 [] = []
@@ -35,9 +40,10 @@ avoidTriple2 ('x' : '.' : 'x' : bs) = 'x' : 'o' : avoidTriple2 ('x' : bs)
 avoidTriple2 ('o' : '.' : 'o' : bs) = 'o' : 'x' : avoidTriple2 ('o' : bs)
 avoidTriple2 (c : cs) = c : avoidTriple2 cs
 
+-- TODO: use added helper to get (valids, invalids)
+-- ? How does it work
 -- if only one valid comb spread that
 -- else spread merged inverted invalid combs
-
 avoidTriple3 :: String -> String
 avoidTriple3 [] = []
 avoidTriple3 l
@@ -52,27 +58,30 @@ avoidTriple3 l
     inValidCombs = map snd $ filter (not . fst) validCombMap
     invertInvalid = map (replace charToGuess otherChar . replace otherChar '.')
     emptyComb = replicate (rx + ro) '.'
-    (rx, ro) = countRemainXO l
+    (rx, ro) = remainXO l
     validCombMap = map (\c -> (isCombValid c, c)) combs
     (charToGuess, otherChar)
-      | rx == 1 && ro == 2 = ('x', 'o')
-      | ro == 1 && rx == 2 = ('o', 'x')
+      | rx == 1 && ro > 1 = ('x', 'o')
+      | ro == 1 && rx > 1 = ('o', 'x')
       | otherwise = ('N', 'N')
     combs = combsXO rx ro
     isCombValid comb = not $ hasTriple (spreadOnDots comb l)
 
 completeLine :: String -> String
 completeLine l
-  | x == 1 && o == 0 = replaceDot 'x' l
-  | x == 0 && o == 1 = replaceDot 'o' l
+  | o == 0 && x > 0 = replaceDot 'x' l
+  | x == 0 && o > 0 = replaceDot 'o' l
   | otherwise = l
   where
-    (x, o) = countRemainXO l
+    (x, o) = remainXO l
 
--- -- -- -- -- -- -- -- -- -- -- --
+--------------------------------
 
 -- TODO
+-- clean thsi section
 -- ? test avoidDuplication
+-- ? clean stuff, make compact
+-- ? generalize
 
 avoidDuplication :: [String] -> [String]
 avoidDuplication = doWhileChanges avoidDupHelp1
@@ -97,18 +106,15 @@ tryDupSolve ls ol =
     then ls
     else solveDup ls lineToCompare
   where
-    linesToCompare = filter (couldBeIdentical ls) ol
+    linesToCompare = filter (couldBeDuplicate ls) ol
     lineToCompare = head linesToCompare
 
-couldBeIdentical :: [Char] -> String -> Bool
-couldBeIdentical ls lc = some (== lc) allVariants
+couldBeDuplicate :: [Char] -> String -> Bool
+couldBeDuplicate ls lc = some (== lc) allVariants
   where
     allVariants = map (`spreadOnDots` ls) spreads
-    spreads = listCombs (replicate rx 'x' ++ replicate ro 'o')
-    (rx, ro) = countRemainXO ls
-
-some :: Foldable t => (a -> Bool) -> t a -> Bool
-some f = foldr ((||) . f) False
+    spreads = rearrangeCombs (replicate rx 'x' ++ replicate ro 'o')
+    (rx, ro) = remainXO ls
 
 solveDup :: String -> String -> String
 solveDup lToSolve lToCompare = spreadOnDots correctSpread lToSolve
@@ -121,10 +127,30 @@ solveDup lToSolve lToCompare = spreadOnDots correctSpread lToSolve
     correctSpread = opposite (head (map fst invalidSpreads))
     invalidSpreads = filter (\(sprd, res) -> res == lToCompare) spreadResMap
     spreadResMap = map (\sprd -> (sprd, spreadOnDots sprd lToSolve)) possibleSpreads
-    possibleSpreads = listCombs (replicate rx 'x' ++ replicate ro 'o')
-    (rx, ro) = countRemainXO lToSolve
+    possibleSpreads = rearrangeCombs (replicate rx 'x' ++ replicate ro 'o')
+    (rx, ro) = remainXO lToSolve
 
 countRemainDot :: String -> Int
 countRemainDot l = rx + ro
   where
-    (rx, ro) = countRemainXO l
+    (rx, ro) = remainXO l
+
+--------------------------------
+
+-- does even more
+-- ? How does it work
+-- check possible fills
+-- filter combs to get only invalid positions
+-- fill invalid positions with opposite chars
+advancedTech1 :: String -> String
+advancedTech1 l = if smallestLeft == 2 then spreadOnDots toSpread l else l
+  where
+    smallestLeft = let (rx, ro) = remainXO l in min rx ro
+    (valids, invalids) = fillVariants l
+    toSpread = map mapHelp result
+    mapHelp cs = if length cs == 1 then opposite (head cs) else '.'
+    opposite c
+      | c == 'x' = 'o'
+      | c == 'o' = 'x'
+      | otherwise = '.'
+    result = zipWith oneHasOtherNot (listCommons invalids) (listCommons valids)

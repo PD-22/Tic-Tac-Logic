@@ -6,7 +6,7 @@
 module TTL (gridSolver, lineSolver) where
 
 import Helpers (applyFunctions, doWhileChanges, replaceDot, transpose)
-import Solvers (avoidTriple1, avoidTriple2, avoidTriple3, completeLine, avoidDuplication)
+import Solvers (advancedTech1, avoidDuplication, avoidTriple1, avoidTriple2, avoidTriple3, completeLine)
 
 lineSolver :: String -> String
 lineSolver =
@@ -15,7 +15,8 @@ lineSolver =
       [ avoidTriple1,
         avoidTriple2,
         avoidTriple3,
-        completeLine
+        completeLine,
+        advancedTech1
       ]
 
 gridSolver :: [String] -> [String]

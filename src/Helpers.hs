@@ -1,3 +1,5 @@
+-- ? add same opposite char function for solvers
+
 module Helpers where
 
 import Data.List (sort)
@@ -18,8 +20,8 @@ transpose m = map head m : transpose (map tail m)
 applyFunctions :: [t -> t] -> t -> t
 applyFunctions fs v = foldl (\v f -> f v) v fs
 
-countRemainXO :: String -> (Int, Int)
-countRemainXO l = (shouldBe - xNum, shouldBe - oNum)
+remainXO :: String -> (Int, Int)
+remainXO l = (shouldBe - xNum, shouldBe - oNum)
   where
     shouldBe = length l `div` 2
     (xNum, oNum) = foldl countXO (0, 0) l
@@ -50,8 +52,39 @@ hasTriple ('x' : 'x' : 'x' : _) = True
 hasTriple ('o' : 'o' : 'o' : _) = True
 hasTriple (c : cs) = hasTriple cs
 
+some :: Foldable t => (a -> Bool) -> t a -> Bool
+some f = foldr ((||) . f) False
+
+-- returns valid and invalid possible fills
+fillVariants :: [Char] -> ([String], [String])
+fillVariants l = (getSndBy fst variants, getSndBy (not . fst) variants)
+  where
+    getSndBy f l = map snd $ filter f l
+    variants = map (fillVrtHelp l) combs
+    (rx, ro) = remainXO l
+    combs = combsXO rx ro
+
+fillVrtHelp :: String -> String -> (Bool, String)
+fillVrtHelp l c = (not $ hasTriple $ spreadOnDots c l, c)
+
+oneHasOtherNot :: (Foldable t, Eq a) => [a] -> t a -> [a]
+oneHasOtherNot l1 l2 = filter (\c -> not $ some (== c) l2) l1
+
+-- finds similarities of lists by character position
+listCommons :: [String] -> [String]
+listCommons [] = []
+listCommons [l] = map (: []) l
+listCommons (lh : lt) = foldl foldHelp start lt
+  where
+    start = map (: []) lh
+    foldHelp acc cur = zipWith zipHelp acc cur
+    zipHelp a b = rmdups (b : a)
+
+-- TODO:
+-- check functions that use this merge
+
 mergeCombs :: [String] -> String
-mergeCombs = foldl mergeCombsHelp1 []
+mergeCombs = replace 'N' '.' . foldl mergeCombsHelp1 []
 
 mergeCombsHelp1 :: String -> String -> String
 mergeCombsHelp1 [] b = b
@@ -61,16 +94,16 @@ mergeCombsHelp1 (ah : at) (bh : bt) = mergeCombsHelp2 ah bh : mergeCombsHelp1 at
 mergeCombsHelp2 :: Char -> Char -> Char
 mergeCombsHelp2 '.' a = a
 mergeCombsHelp2 a '.' = a
-mergeCombsHelp2 a b = if a == b then a else '.'
+mergeCombsHelp2 a b = if a == b then a else 'N'
 
 combsXO :: Int -> Int -> [String]
-combsXO xn on = listCombs (replicate xn 'x' ++ replicate on 'o')
+combsXO xn on = rearrangeCombs (replicate xn 'x' ++ replicate on 'o')
 
-listCombs :: String -> [String]
-listCombs [c] = [[c]]
-listCombs l = rmdups $ concatMap mapHelp l
+rearrangeCombs :: String -> [String]
+rearrangeCombs [c] = [[c]]
+rearrangeCombs l = rmdups $ concatMap mapHelp l
   where
-    mapHelp c = map (c :) (listCombs (removeFirst c l))
+    mapHelp c = map (c :) (rearrangeCombs (removeFirst c l))
 
 removeFirst :: Eq t => t -> [t] -> [t]
 removeFirst _ [] = []
