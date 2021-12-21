@@ -2,15 +2,20 @@ module Solvers where
 
 import GHC.ST (STret)
 import Helpers
-  ( countRemainXO,
+  ( combsXO,
+    countRemainXO,
     doWhileChanges,
     hasTriple,
     listCombs,
+    mergeCombs,
     replace,
     replaceDot,
     spreadOnDots,
     transpose,
   )
+
+-- TODO: might need to generalize some solvers
+-- for example in avoidTriple3 use one X and more than one O cases
 
 avoidTriple1 :: String -> String
 avoidTriple1 [] = []
@@ -30,40 +35,31 @@ avoidTriple2 ('x' : '.' : 'x' : bs) = 'x' : 'o' : avoidTriple2 ('x' : bs)
 avoidTriple2 ('o' : '.' : 'o' : bs) = 'o' : 'x' : avoidTriple2 ('o' : bs)
 avoidTriple2 (c : cs) = c : avoidTriple2 cs
 
--- .x..oxxo
--- TODO:
--- Test
--- more examples
---  what if unsolvable?
--- maybe not 1x 2o or 2x 1o cases only
--- spread all combsToSpread to l
+-- if only one valid comb spread that
+-- else spread merged inverted invalid combs
 
--- unsolvable tells that x in (1x,2o) should be o
--- example: if not xoo spread o..
 avoidTriple3 :: String -> String
 avoidTriple3 [] = []
 avoidTriple3 l
   | charToGuess == 'N' = l
-  | null combsToSpread = l
-  | otherwise = spreadOnDots (head combsToSpread) l
+  | otherwise = spreadOnDots combToSpread l
   where
+    combToSpread
+      | length validCombs == 1 = head validCombs
+      | null inValidCombs = emptyComb
+      | otherwise = mergeCombs $ invertInvalid inValidCombs
+    validCombs = map snd $ filter fst validCombMap
+    inValidCombs = map snd $ filter (not . fst) validCombMap
+    invertInvalid = map (replace charToGuess otherChar . replace otherChar '.')
+    emptyComb = replicate (rx + ro) '.'
     (rx, ro) = countRemainXO l
-    charToGuess
-      | rx == 1 && ro == 2 = 'x'
-      | ro == 1 && rx == 2 = 'o'
-      | otherwise = 'N'
-    otherChar
-      | charToGuess == 'x' = 'o'
-      | charToGuess == 'o' = 'x'
-      | otherwise = 'N'
-    combStart = replicate rx 'x' ++ replicate ro 'o'
-    combs = listCombs combStart
-    invalidCombs =
-      map snd $
-        filter fst $
-          map (\comb -> (hasTriple (spreadOnDots comb l), comb)) combs
-    combsToSpread =
-      map (replace 'x' 'o' . replace otherChar '.') invalidCombs
+    validCombMap = map (\c -> (isCombValid c, c)) combs
+    (charToGuess, otherChar)
+      | rx == 1 && ro == 2 = ('x', 'o')
+      | ro == 1 && rx == 2 = ('o', 'x')
+      | otherwise = ('N', 'N')
+    combs = combsXO rx ro
+    isCombValid comb = not $ hasTriple (spreadOnDots comb l)
 
 completeLine :: String -> String
 completeLine l
@@ -74,6 +70,9 @@ completeLine l
     (x, o) = countRemainXO l
 
 -- -- -- -- -- -- -- -- -- -- -- --
+
+-- TODO
+-- ? test avoidDuplication
 
 avoidDuplication :: [String] -> [String]
 avoidDuplication = doWhileChanges avoidDupHelp1
