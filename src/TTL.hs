@@ -3,10 +3,17 @@
 -- No Dublicate Lines
 -- Balanced X O amount
 
-module TTL (gridSolver, lineSolver) where
+module TTL (gridSolver) where
 
-import Helpers (applyFunctions, doWhileChanges, replaceDot, transpose)
-import Solvers (advancedTech1, avoidDuplication, avoidTriple1, avoidTriple2, avoidTriple3, completeLine)
+import Helpers (applyFunctions, doOnRowsCols, doWhileChanges)
+import Solvers
+  ( advancedTech1,
+    avoidDuplication,
+    avoidTriple1,
+    avoidTriple2,
+    avoidTriple3,
+    completeLine,
+  )
 
 lineSolver :: String -> String
 lineSolver =
@@ -23,5 +30,5 @@ gridSolver :: [String] -> [String]
 gridSolver g = doWhileChanges graphSolvers g
   where
     graphSolvers = applyFunctions [lineSolvers, avoidDuplication]
-    lineSolvers g = transpose $ rowSolver $ transpose $ rowSolver g
+    lineSolvers g = doOnRowsCols rowSolver g
     rowSolver = map lineSolver

@@ -1,5 +1,3 @@
--- ? add same opposite char function for solvers
-
 module Helpers where
 
 import Data.List (sort)
@@ -56,16 +54,44 @@ some :: Foldable t => (a -> Bool) -> t a -> Bool
 some f = foldr ((||) . f) False
 
 -- returns valid and invalid possible fills
-fillVariants :: [Char] -> ([String], [String])
+fillVariants :: String -> ([String], [String])
 fillVariants l = (getSndBy fst variants, getSndBy (not . fst) variants)
   where
     getSndBy f l = map snd $ filter f l
-    variants = map (fillVrtHelp l) combs
-    (rx, ro) = remainXO l
-    combs = combsXO rx ro
+    variants = map (\c -> (combIsValid c, c)) (spreadCombs l)
+    combIsValid c = not $ hasTriple (spreadOnDots c l)
 
-fillVrtHelp :: String -> String -> (Bool, String)
-fillVrtHelp l c = (not $ hasTriple $ spreadOnDots c l, c)
+-- considers duplicate lines
+fillVariants2 :: String -> [String] -> ([String], [String])
+fillVariants2 l g = (newValids, invalids)
+  where
+    newValids = filter (not . makesDupl) valids
+    makesDupl c = some (== spreadOnDots c l) ol
+    (valids, invalids) = fillVariants l
+    ol = filter (/= l) g
+
+spreadCombs :: String -> [String]
+spreadCombs l = let (rx, ro) = remainXO l in combsXO rx ro
+
+-- finds correct using char positions (spread) that only invalids have
+{- for example:
+valids = ["xxoxox","xxxoox","xxxoxo"]
+invalids = ["ooxxxx","oxoxxx","oxxoxx","oxxxox","oxxxxo","xooxxx",
+  "xoxoxx","xoxxox","xoxxxo","xxooxx","xxoxxo","xxxxoo"]
+result = [['o'],['o'],[],[],[],[]]
+spread = "xx...." -}
+
+-- ? add other lists as option for duplication validity check
+onlyValidSpread :: String -> String
+onlyValidSpread l = map mapHelp onlyInvalidsHave
+  where
+    onlyInvalidsHave = zipWith oneHasOtherNot (listCommons is) (listCommons vs)
+    (vs, is) = fillVariants l
+    mapHelp cs = if length cs == 1 then reverseChar (head cs) else '.'
+    reverseChar c
+      | c == 'x' = 'o'
+      | c == 'o' = 'x'
+      | otherwise = '.'
 
 oneHasOtherNot :: (Foldable t, Eq a) => [a] -> t a -> [a]
 oneHasOtherNot l1 l2 = filter (\c -> not $ some (== c) l2) l1
@@ -79,9 +105,6 @@ listCommons (lh : lt) = foldl foldHelp start lt
     start = map (: []) lh
     foldHelp acc cur = zipWith zipHelp acc cur
     zipHelp a b = rmdups (b : a)
-
--- TODO:
--- check functions that use this merge
 
 mergeCombs :: [String] -> String
 mergeCombs = replace 'N' '.' . foldl mergeCombsHelp1 []
@@ -119,3 +142,11 @@ rmdupsSorted (lh : lt) = lh : rmdupsSorted (rmTill lh lt)
 rmTill :: Eq t => t -> [t] -> [t]
 rmTill c [] = []
 rmTill c l@(lh : lt) = if lh == c then rmTill c lt else l
+
+countRemainDot :: String -> Int
+countRemainDot l = rx + ro
+  where
+    (rx, ro) = remainXO l
+
+doOnRowsCols :: ([String] -> [String]) -> [String] -> [String]
+doOnRowsCols f g = transpose $ f $ transpose $ f g
