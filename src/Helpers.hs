@@ -53,22 +53,25 @@ hasTriple (c : cs) = hasTriple cs
 some :: Foldable t => (a -> Bool) -> t a -> Bool
 some f = foldr ((||) . f) False
 
--- returns valid and invalid possible fills
 fillVariants :: String -> ([String], [String])
-fillVariants l = (getSndBy fst variants, getSndBy (not . fst) variants)
+fillVariants l = filter2 isValid (spreadCombs l)
   where
-    getSndBy f l = map snd $ filter f l
-    variants = map (\c -> (combIsValid c, c)) (spreadCombs l)
-    combIsValid c = not $ hasTriple (spreadOnDots c l)
+    isValid c =
+      let spreadResult = spreadOnDots c l
+       in not (hasTriple spreadResult)
 
--- considers duplicate lines
 fillVariants2 :: String -> [String] -> ([String], [String])
-fillVariants2 l g = (newValids, invalids)
+fillVariants2 l g = filter2 isValid (spreadCombs l)
   where
-    newValids = filter (not . makesDupl) valids
+    isValid c =
+      let spreadResult = spreadOnDots c l
+       in not (hasTriple spreadResult || makesDupl c)
     makesDupl c = some (== spreadOnDots c l) ol
-    (valids, invalids) = fillVariants l
     ol = filter (/= l) g
+
+-- returns both filtered and unfiltered elements as tuple
+filter2 :: Foldable t => (a -> Bool) -> t a -> ([a], [a])
+filter2 f = foldr (\cur (a, b) -> if f cur then (cur : a, b) else (a, cur : b)) ([], [])
 
 spreadCombs :: String -> [String]
 spreadCombs l = let (rx, ro) = remainXO l in combsXO rx ro
