@@ -81,10 +81,12 @@ spreadCombs l = let (rx, ro) = remainXO l in combsXO rx ro
 valids = ["xxoxox","xxxoox","xxxoxo"]
 invalids = ["ooxxxx","oxoxxx","oxxoxx","oxxxox","oxxxxo","xooxxx",
   "xoxoxx","xoxxox","xoxxxo","xxooxx","xxoxxo","xxxxoo"]
+listCommons valids = ["x","x","ox","ox","ox","ox"]
+listCommons inValids = ["ox","ox","ox","ox","ox","ox"]
 result = [['o'],['o'],[],[],[],[]]
 spread = "xx...." -}
-
--- ? add other lists as option for duplication validity check
+-- TODO:
+-- clean code duplication in onlyValidSpread and onlyValidSpread2
 onlyValidSpread :: String -> String
 onlyValidSpread l = map mapHelp onlyInvalidsHave
   where
@@ -96,10 +98,22 @@ onlyValidSpread l = map mapHelp onlyInvalidsHave
       | c == 'o' = 'x'
       | otherwise = '.'
 
+onlyValidSpread2 :: String -> [String] -> String
+onlyValidSpread2 l g = map mapHelp onlyInvalidsHave
+  where
+    onlyInvalidsHave = zipWith oneHasOtherNot (listCommons is) (listCommons vs)
+    (vs, is) = fillVariants2 l g
+    mapHelp cs = if length cs == 1 then reverseChar (head cs) else '.'
+    reverseChar c
+      | c == 'x' = 'o'
+      | c == 'o' = 'x'
+      | otherwise = '.'
+
+-- finds elements that are in first list but not in second
 oneHasOtherNot :: (Foldable t, Eq a) => [a] -> t a -> [a]
 oneHasOtherNot l1 l2 = filter (\c -> not $ some (== c) l2) l1
 
--- finds similarities of lists by character position
+-- gives info for what characters appear at each position
 listCommons :: [String] -> [String]
 listCommons [] = []
 listCommons [l] = map (: []) l
@@ -153,3 +167,7 @@ countRemainDot l = rx + ro
 
 doOnRowsCols :: ([String] -> [String]) -> [String] -> [String]
 doOnRowsCols f g = transpose $ f $ transpose $ f g
+
+replaceFirst :: Eq t => t -> t -> [t] -> [t]
+replaceFirst _ _ [] = []
+replaceFirst c1 c2 (a : as) = if a == c1 then c2 : as else a : replaceFirst c1 c2 as

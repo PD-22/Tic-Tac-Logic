@@ -8,11 +8,16 @@ import Helpers
     fillVariants2,
     mergeCombs,
     onlyValidSpread,
+    onlyValidSpread2,
     remainXO,
     replace,
     replaceDot,
     spreadOnDots,
   )
+
+-- TODO
+-- add brute force solver (maybe optimized)
+-- ? generalise some solvers
 
 avoidTriple1 :: String -> String
 avoidTriple1 [] = []
@@ -62,9 +67,10 @@ completeLine l
     (x, o) = remainXO l
 
 avoidDuplication :: [String] -> [String]
-avoidDuplication g = doWhileChanges (doOnRowsCols (map avoidDuplHelp3)) g
+avoidDuplication g = doWhileChanges (doOnRowsCols mapper) g
   where
-    avoidDuplHelp3 l =
+    mapper g = map (avoidDupHelp g) g
+    avoidDupHelp g l =
       let remainDots = countRemainDot l
           valids = fst (fillVariants2 l g)
        in if remainDots == 2 && (length valids == 1)
@@ -76,3 +82,12 @@ advancedTech1 l = if fewestLeft == 2 then spreadOnDots toSpread l else l
   where
     fewestLeft = let (rx, ro) = remainXO l in min rx ro
     toSpread = onlyValidSpread l
+
+advancedTech2 :: [String] -> [String]
+advancedTech2 g = doWhileChanges (doOnRowsCols mapper) g
+  where
+    mapper g = map (advancedTech2Help g) g
+    advancedTech2Help g l =
+      let fewestLeft = let (rx, ro) = remainXO l in min rx ro
+          toSpread = onlyValidSpread2 l g
+       in if fewestLeft == 1 then spreadOnDots toSpread l else l

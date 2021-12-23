@@ -8,6 +8,7 @@ module TTL (gridSolver) where
 import Helpers (applyFunctions, doOnRowsCols, doWhileChanges)
 import Solvers
   ( advancedTech1,
+    advancedTech2,
     avoidDuplication,
     avoidTriple1,
     avoidTriple2,
@@ -26,9 +27,11 @@ lineSolver =
         advancedTech1
       ]
 
-gridSolver :: [String] -> [String]
-gridSolver g = doWhileChanges graphSolvers g
+gridSolvers :: [[String] -> [String]]
+gridSolvers = [lineSolvers, avoidDuplication, advancedTech2]
   where
-    graphSolvers = applyFunctions [lineSolvers, avoidDuplication]
-    lineSolvers g = doOnRowsCols rowSolver g
+    lineSolvers = doOnRowsCols rowSolver
     rowSolver = map lineSolver
+
+gridSolver :: [String] -> [String]
+gridSolver = doWhileChanges (applyFunctions gridSolvers)
