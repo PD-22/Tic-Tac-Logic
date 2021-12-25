@@ -2,6 +2,22 @@ module Helpers where
 
 import Data.List (sort)
 
+data Cell = X | O | E | N deriving (Show, Eq, Ord)
+
+type Line = [Cell]
+
+type Grid = [Line]
+
+stringsToGrid :: [String] -> Grid
+stringsToGrid = map lineMapper
+  where
+    lineMapper str = map charMapper str
+    charMapper char
+      | char == 'X' || char == 'x' = X
+      | char == 'O' || char == 'o' = O
+      | char == '.' = E
+      | otherwise = N
+
 doWhileChanges :: Eq t => (t -> t) -> t -> t
 doWhileChanges f oldValue =
   if newValue == oldValue
@@ -10,7 +26,7 @@ doWhileChanges f oldValue =
   where
     newValue = f oldValue
 
-transpose :: [[a]] -> [[a]]
+transpose :: Grid -> Grid
 transpose [] = []
 transpose ([] : _) = []
 transpose m = map head m : transpose (map tail m)
@@ -18,49 +34,49 @@ transpose m = map head m : transpose (map tail m)
 applyFunctions :: [t -> t] -> t -> t
 applyFunctions fs v = foldl (\v f -> f v) v fs
 
-remainXO :: String -> (Int, Int)
+remainXO :: Line -> (Int, Int)
 remainXO l = (shouldBe - xNum, shouldBe - oNum)
   where
     shouldBe = length l `div` 2
     (xNum, oNum) = foldl countXO (0, 0) l
     countXO (x, o) char = case char of
-      'x' -> (x + 1, o)
-      'o' -> (x, o + 1)
+      X -> (x + 1, o)
+      O -> (x, o + 1)
       _ -> (x, o)
 
-replaceDot :: Char -> String -> String
-replaceDot = replace '.'
+replaceDot :: Cell -> Line -> Line
+replaceDot = replace E
 
 replace :: Eq b => b -> b -> [b] -> [b]
 replace a b = map (\c -> if c == a then b else c)
 
-spreadOnDots :: String -> String -> String
+spreadOnDots :: Line -> Line -> Line
 spreadOnDots [] l = l
 spreadOnDots _ [] = []
 spreadOnDots rs@(rh : rt) (lh : lt) =
-  if lh == '.'
+  if lh == E
     then rh : spreadOnDots rt lt
     else lh : spreadOnDots rs lt
 
-hasTriple :: String -> Bool
+hasTriple :: Line -> Bool
 hasTriple [] = False
 hasTriple [a] = False
 hasTriple [a, b] = False
-hasTriple ('x' : 'x' : 'x' : _) = True
-hasTriple ('o' : 'o' : 'o' : _) = True
+hasTriple (X : X : X : _) = True
+hasTriple (O : O : O : _) = True
 hasTriple (c : cs) = hasTriple cs
 
 some :: Foldable t => (a -> Bool) -> t a -> Bool
 some f = foldr ((||) . f) False
 
-fillVariants :: String -> ([String], [String])
+fillVariants :: Line -> (Grid, Grid)
 fillVariants l = filter2 isValid (spreadCombs l)
   where
     isValid c =
       let spreadResult = spreadOnDots c l
        in not (hasTriple spreadResult)
 
-fillVariants2 :: String -> [String] -> ([String], [String])
+fillVariants2 :: Line -> Grid -> (Grid, Grid)
 fillVariants2 l g = filter2 isValid (spreadCombs l)
   where
     isValid c =
@@ -73,7 +89,7 @@ fillVariants2 l g = filter2 isValid (spreadCombs l)
 filter2 :: Foldable t => (a -> Bool) -> t a -> ([a], [a])
 filter2 f = foldr (\cur (a, b) -> if f cur then (cur : a, b) else (a, cur : b)) ([], [])
 
-spreadCombs :: String -> [String]
+spreadCombs :: Line -> Grid
 spreadCombs l = let (rx, ro) = remainXO l in combsXO rx ro
 
 -- finds correct using char positions (spread) that only invalids have
@@ -83,38 +99,38 @@ invalids = ["ooxxxx","oxoxxx","oxxoxx","oxxxox","oxxxxo","xooxxx",
   "xoxoxx","xoxxox","xoxxxo","xxooxx","xxoxxo","xxxxoo"]
 listCommons valids = ["x","x","ox","ox","ox","ox"]
 listCommons inValids = ["ox","ox","ox","ox","ox","ox"]
-result = [['o'],['o'],[],[],[],[]]
+result = [[O],[O],[],[],[],[]]
 spread = "xx...." -}
 -- TODO:
 -- clean code duplication in onlyValidSpread and onlyValidSpread2
-onlyValidSpread :: String -> String
+onlyValidSpread :: Line -> Line
 onlyValidSpread l = map mapHelp onlyInvalidsHave
   where
     onlyInvalidsHave = zipWith oneHasOtherNot (listCommons is) (listCommons vs)
     (vs, is) = fillVariants l
-    mapHelp cs = if length cs == 1 then reverseChar (head cs) else '.'
+    mapHelp cs = if length cs == 1 then reverseChar (head cs) else E
     reverseChar c
-      | c == 'x' = 'o'
-      | c == 'o' = 'x'
-      | otherwise = '.'
+      | c == X = O
+      | c == O = X
+      | otherwise = E
 
-onlyValidSpread2 :: String -> [String] -> String
+onlyValidSpread2 :: Line -> Grid -> Line
 onlyValidSpread2 l g = map mapHelp onlyInvalidsHave
   where
     onlyInvalidsHave = zipWith oneHasOtherNot (listCommons is) (listCommons vs)
     (vs, is) = fillVariants2 l g
-    mapHelp cs = if length cs == 1 then reverseChar (head cs) else '.'
+    mapHelp cs = if length cs == 1 then reverseChar (head cs) else E
     reverseChar c
-      | c == 'x' = 'o'
-      | c == 'o' = 'x'
-      | otherwise = '.'
+      | c == X = O
+      | c == O = X
+      | otherwise = E
 
 -- finds elements that are in first list but not in second
 oneHasOtherNot :: (Foldable t, Eq a) => [a] -> t a -> [a]
 oneHasOtherNot l1 l2 = filter (\c -> not $ some (== c) l2) l1
 
 -- gives info for what characters appear at each position
-listCommons :: [String] -> [String]
+listCommons :: Grid -> Grid
 listCommons [] = []
 listCommons [l] = map (: []) l
 listCommons (lh : lt) = foldl foldHelp start lt
@@ -123,23 +139,23 @@ listCommons (lh : lt) = foldl foldHelp start lt
     foldHelp acc cur = zipWith zipHelp acc cur
     zipHelp a b = rmdups (b : a)
 
-mergeCombs :: [String] -> String
-mergeCombs = replace 'N' '.' . foldl mergeCombsHelp1 []
+mergeCombs :: Grid -> Line
+mergeCombs = replace N E . foldl mergeCombsHelp1 []
 
-mergeCombsHelp1 :: String -> String -> String
+mergeCombsHelp1 :: Line -> Line -> Line
 mergeCombsHelp1 [] b = b
 mergeCombsHelp1 a [] = a
 mergeCombsHelp1 (ah : at) (bh : bt) = mergeCombsHelp2 ah bh : mergeCombsHelp1 at bt
 
-mergeCombsHelp2 :: Char -> Char -> Char
-mergeCombsHelp2 '.' a = a
-mergeCombsHelp2 a '.' = a
-mergeCombsHelp2 a b = if a == b then a else 'N'
+mergeCombsHelp2 :: Cell -> Cell -> Cell
+mergeCombsHelp2 E a = a
+mergeCombsHelp2 a E = a
+mergeCombsHelp2 a b = if a == b then a else N
 
-combsXO :: Int -> Int -> [String]
-combsXO xn on = rearrangeCombs (replicate xn 'x' ++ replicate on 'o')
+combsXO :: Int -> Int -> Grid
+combsXO xn on = rearrangeCombs (replicate xn X ++ replicate on O)
 
-rearrangeCombs :: String -> [String]
+rearrangeCombs :: Line -> Grid
 rearrangeCombs [c] = [[c]]
 rearrangeCombs l = rmdups $ concatMap mapHelp l
   where
@@ -161,15 +177,15 @@ rmTill c [] = []
 rmTill c l@(lh : lt) = if lh == c then rmTill c lt else l
 
 -- ? maybe merge
-countRemainDot :: String -> Int
+countRemainDot :: Line -> Int
 countRemainDot l = rx + ro
   where
     (rx, ro) = remainXO l
 
-countDot :: String -> Int
-countDot = foldl (\a c -> a + if c == '.' then 1 else 0) 0
+countDot :: Line -> Int
+countDot = foldl (\a c -> a + if c == E then 1 else 0) 0
 
-doOnRowsCols :: ([String] -> [String]) -> [String] -> [String]
+doOnRowsCols :: (Grid -> Grid) -> Grid -> Grid
 doOnRowsCols f g = transpose $ f $ transpose $ f g
 
 replaceFirst :: Eq t => t -> t -> [t] -> [t]
@@ -177,14 +193,14 @@ replaceFirst _ _ [] = []
 replaceFirst c1 c2 (a : as) = if a == c1 then c2 : as else a : replaceFirst c1 c2 as
 
 -- True if they have same x and o positions
-linesAreSame :: [Char] -> [Char] -> Bool
+linesAreSame :: Line -> Line -> Bool
 linesAreSame l1 l2 = and sameCharZip
   where
     sameCharZip = zipWith charZipper l1 l2
-    charZipper a b = not (a == '.' || b == '.') && (a == b)
+    charZipper a b = not (a == E || b == E) && (a == b)
 
 -- takes a line and grid that has the line
-hasDupl :: String -> [String] -> Bool
+hasDupl :: Line -> Grid -> Bool
 hasDupl l g = gridHasLine && lineHasDupl
   where
     gridHasLine = some (linesAreSame l) g
@@ -192,24 +208,24 @@ hasDupl l g = gridHasLine && lineHasDupl
     duplCount = foldl countFolder 0 g
     countFolder acc cur = acc + (if linesAreSame cur l then 1 else 0)
 
-hasBalancedXO :: String -> Bool
+hasBalancedXO :: Line -> Bool
 hasBalancedXO l = (rx <= shouldBe) && (ro <= shouldBe)
   where
     (rx, ro) = remainXO l
     shouldBe = length l `div` 2
 
-countDot2 :: [String] -> Int
+countDot2 :: Grid -> Int
 countDot2 = foldl (\a b -> a + countDot b) 0
 
 -- same as replaceFirst but operates on whole grid
-replaceFirst2 :: Char -> Char -> [String] -> [String]
+replaceFirst2 :: Cell -> Cell -> Grid -> Grid
 replaceFirst2 _ _ [] = []
 replaceFirst2 c1 c2 (l : ls) = if didReplace then nl : ls else l : replaceFirst2 c1 c2 ls
   where
     didReplace = nl /= l
     nl = replaceFirst c1 c2 l
 
-gridIsValid :: [String] -> Bool
+gridIsValid :: Grid -> Bool
 gridIsValid g = rowsAreValid g && rowsAreValid (transpose g)
   where
     rowsAreValid rs = foldl (\b l -> b && lineIsValid l rs) True rs

@@ -1,7 +1,10 @@
-module TTL (gridSolver) where
+module TTL (gridSolver, Cell, Line, Grid) where
 
 import Helpers
-  ( applyWhileChanges,
+  ( Cell (..),
+    Grid,
+    Line,
+    applyWhileChanges,
     countDot2,
     doOnRowsCols,
     gridIsValid,
@@ -17,13 +20,12 @@ import Solvers
     completeLine,
   )
 
--- TODO: clean imports after cleaning TTL
 -- Rules:
 -- No Triples
 -- No Dublicate Lines
 -- Balanced X O amount
 
-lineSolver :: String -> String
+lineSolver :: Line -> Line
 lineSolver =
   applyWhileChanges
     [ avoidTriple1,
@@ -33,12 +35,12 @@ lineSolver =
       advancedTech1
     ]
 
-techSolver :: [String] -> [String]
+techSolver :: Grid -> Grid
 techSolver = applyWhileChanges [gridLineSolver, avoidDuplication, advancedTech2]
   where
     gridLineSolver = doOnRowsCols (map lineSolver)
 
-gridSolver :: [String] -> [String]
+gridSolver :: Grid -> Grid
 gridSolver og = if isFilled g then g else bruteForce
   where
     g = techSolver og
@@ -46,6 +48,6 @@ gridSolver og = if isFilled g then g else bruteForce
       | gridIsValid xWay = xWay
       | gridIsValid oWay = oWay
       | otherwise = g
-    xWay = gridSolver (replaceFirst2 '.' 'x' g)
-    oWay = gridSolver (replaceFirst2 '.' 'o' g)
+    xWay = gridSolver (replaceFirst2 E X g)
+    oWay = gridSolver (replaceFirst2 E O g)
     isFilled g = countDot2 g == 0
