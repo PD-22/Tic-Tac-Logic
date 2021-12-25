@@ -1,55 +1,14 @@
-xooxoxooxx
-ooxoxoxxox
-xxoxxooxoo
-ooxxoxooxx
-..xooxxoxo
-..o.xoxxo.
-x.....ox..
-o..xoxxo..
-o..oxoxox.
-x..o..oxo.
-
-x  o  o  x  o  x  o  o  x  x
-o  o  x  o  x  o  x  x  o  x
-x  x  o  x  x  o  o  x  o  o
-o  o  x  x  o  x  o  o  x  x
-ox ox x  o  o  x  x  o  x  o
-ox ox o  ox x  o  x  x  o  ox
-x  ox ox ox ox ox o  x  ox ox
-o  ox ox x  o  x  x  o  ox ox
-o  ox ox o  x  o  x  o  x  ox
-x  ox ox o  ox ox o  x  o  ox
-
-
-xoxo..xoox
-ooxo......
-oxoxxo....
-xoxxo..xoo
-oxxoox.ox.
-xooxxo.xo.
-oxooxxoxxo
-oxxooxxoox
-xooxxo..xo
-xxoxo.....
-
-x  o  x  o  ox ox x  o  o  x
-o  o  x  o  ox ox ox ox ox ox
-o  x  o  x  x  o  ox ox ox ox
-x  o  x  x  o  ox ox x  o  o
-o  x  x  o  o  x  ox o  x  ox
-x  o  o  x  x  o  ox x  o  ox
-o  x  o  o  x  x  o  x  x  o
-o  x  x  o  o  x  x  o  o  x
-x  o  o  x  x  o  ox ox x  o
-x  x  o  x  o  ox ox ox ox ox
-
-x  o  o  x  o  x  o  o  x  x 
-o  o  x  o  x  o  x  x  o  x 
-x  x  o  x  x  o  o  x  o  o 
-o  o  x  x  o  x  o  o  x  x 
-ox ox x  o  o  x  x  o  x  o 
-ox ox o  ox x  o  x  x  o  ox 
-x  ox ox ox ox ox o  x  ox ox 
-o  ox ox x  o  x  x  o  ox ox 
-o  ox ox o  x  o  x  o  x  ox 
-x  ox ox o  ox ox o  x  o  ox
+....o.oo..
+..o.o.....
+.x.....xx.
+.....o....
+x.x.......
+.xx...o...
+x.......o.
+..x.....oo
+.o........
+x.......x.
+....o.....
+.o.x.x....
+......o.x.
+.x..o.....

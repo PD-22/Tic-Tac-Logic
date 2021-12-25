@@ -66,8 +66,8 @@ fillVariants2 l g = filter2 isValid (spreadCombs l)
     isValid c =
       let spreadResult = spreadOnDots c l
        in not (hasTriple spreadResult || makesDupl c)
-    makesDupl c = some (== spreadOnDots c l) ol
-    ol = filter (/= l) g
+    makesDupl c = some (\ol -> linesAreSame ol (spreadOnDots c l)) ols
+    ols = filter (/= l) g
 
 -- returns both filtered and unfiltered elements as tuple
 filter2 :: Foldable t => (a -> Bool) -> t a -> ([a], [a])
@@ -160,10 +160,14 @@ rmTill :: Eq t => t -> [t] -> [t]
 rmTill c [] = []
 rmTill c l@(lh : lt) = if lh == c then rmTill c lt else l
 
+-- ? maybe merge
 countRemainDot :: String -> Int
 countRemainDot l = rx + ro
   where
     (rx, ro) = remainXO l
+
+countDot :: String -> Int
+countDot = foldl (\a c -> a + if c == '.' then 1 else 0) 0
 
 doOnRowsCols :: ([String] -> [String]) -> [String] -> [String]
 doOnRowsCols f g = transpose $ f $ transpose $ f g
@@ -171,3 +175,45 @@ doOnRowsCols f g = transpose $ f $ transpose $ f g
 replaceFirst :: Eq t => t -> t -> [t] -> [t]
 replaceFirst _ _ [] = []
 replaceFirst c1 c2 (a : as) = if a == c1 then c2 : as else a : replaceFirst c1 c2 as
+
+-- True if they have same x and o positions
+linesAreSame :: [Char] -> [Char] -> Bool
+linesAreSame l1 l2 = and sameCharZip
+  where
+    sameCharZip = zipWith charZipper l1 l2
+    charZipper a b = not (a == '.' || b == '.') && (a == b)
+
+-- takes a line and grid that has the line
+hasDupl :: String -> [String] -> Bool
+hasDupl l g = gridHasLine && lineHasDupl
+  where
+    gridHasLine = some (linesAreSame l) g
+    lineHasDupl = duplCount > 1
+    duplCount = foldl countFolder 0 g
+    countFolder acc cur = acc + (if linesAreSame cur l then 1 else 0)
+
+hasBalancedXO :: String -> Bool
+hasBalancedXO l = (rx <= shouldBe) && (ro <= shouldBe)
+  where
+    (rx, ro) = remainXO l
+    shouldBe = length l `div` 2
+
+countDot2 :: [String] -> Int
+countDot2 = foldl (\a b -> a + countDot b) 0
+
+-- same as replaceFirst but operates on whole grid
+replaceFirst2 :: Char -> Char -> [String] -> [String]
+replaceFirst2 _ _ [] = []
+replaceFirst2 c1 c2 (l : ls) = if didReplace then nl : ls else l : replaceFirst2 c1 c2 ls
+  where
+    didReplace = nl /= l
+    nl = replaceFirst c1 c2 l
+
+gridIsValid :: [String] -> Bool
+gridIsValid g = rowsAreValid g && rowsAreValid (transpose g)
+  where
+    rowsAreValid rs = foldl (\b l -> b && lineIsValid l rs) True rs
+    lineIsValid l rs = not (hasTriple l || hasDupl l rs) && hasBalancedXO l
+
+applyWhileChanges :: Eq t => [t -> t] -> t -> t
+applyWhileChanges fs = doWhileChanges (applyFunctions fs)

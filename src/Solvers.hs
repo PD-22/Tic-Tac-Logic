@@ -1,19 +1,18 @@
 module Solvers where
 
 import Helpers
-  ( countRemainDot,
-    doOnRowsCols,
-    doWhileChanges,
-    fillVariants,
-    fillVariants2,
-    mergeCombs,
-    onlyValidSpread,
-    onlyValidSpread2,
-    remainXO,
-    replace,
-    replaceDot,
-    spreadOnDots,
-  )
+    ( countRemainDot,
+      doOnRowsCols,
+      doWhileChanges,
+      fillVariants,
+      fillVariants2,
+      mergeCombs,
+      onlyValidSpread,
+      onlyValidSpread2,
+      remainXO,
+      replace,
+      replaceDot,
+      spreadOnDots )
 
 -- TODO
 -- add brute force solver (maybe optimized)
