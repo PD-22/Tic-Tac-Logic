@@ -8,6 +8,14 @@ type Line = [Cell]
 
 type Grid = [Line]
 
+inputIsValid :: [String] -> Bool
+inputIsValid g = linesHaveSameLength && even width && even height && hasOnlyXODot
+  where
+    height = length g
+    width = length (head g)
+    hasOnlyXODot = every (every (\c -> some (== c) "XOxo.")) g
+    linesHaveSameLength = every (\l -> length l == width) g
+
 stringsToGrid :: [String] -> Grid
 stringsToGrid = map lineMapper
   where
@@ -17,6 +25,16 @@ stringsToGrid = map lineMapper
       | char == 'O' || char == 'o' = O
       | char == '.' = E
       | otherwise = N
+
+gridToStrings :: Grid -> [String]
+gridToStrings = map lineMapper
+  where
+    lineMapper line = map charMapper line
+    charMapper cell
+      | cell == X = 'X'
+      | cell == O = 'O'
+      | cell == E = '.'
+      | otherwise = ' '
 
 doWhileChanges :: Eq t => (t -> t) -> t -> t
 doWhileChanges f oldValue =
@@ -68,6 +86,9 @@ hasTriple (c : cs) = hasTriple cs
 
 some :: Foldable t => (a -> Bool) -> t a -> Bool
 some f = foldr ((||) . f) False
+
+every :: Foldable t => (a -> Bool) -> t a -> Bool
+every f = foldr ((&&) . f) True
 
 fillVariants :: Line -> (Grid, Grid)
 fillVariants l = filter2 isValid (spreadCombs l)
@@ -127,7 +148,7 @@ onlyValidSpread2 l g = map mapHelp onlyInvalidsHave
 
 -- finds elements that are in first list but not in second
 oneHasOtherNot :: (Foldable t, Eq a) => [a] -> t a -> [a]
-oneHasOtherNot l1 l2 = filter (\c -> not $ some (== c) l2) l1
+oneHasOtherNot l1 l2 = filter (\c -> every (/= c) l2) l1
 
 -- gives info for what characters appear at each position
 listCommons :: Grid -> Grid

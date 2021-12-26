@@ -18,10 +18,6 @@ import Helpers
     spreadOnDots,
   )
 
--- TODO
--- add brute force solver (maybe optimized)
--- ? generalise some solvers
-
 avoidTriple1 :: Line -> Line
 avoidTriple1 [] = []
 avoidTriple1 [a] = [a]
