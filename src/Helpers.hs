@@ -73,8 +73,12 @@ remainXO :: Line -> (Int, Int)
 remainXO l = (shouldBe - xNum, shouldBe - oNum)
   where
     shouldBe = length l `div` 2
-    (xNum, oNum) = foldl countXO (0, 0) l
-    countXO (x, o) char = case char of
+    (xNum, oNum) = countXO l
+
+countXO :: Line -> (Int, Int)
+countXO l = foldl countHelp (0, 0) l
+  where
+    countHelp (x, o) char = case char of
       X -> (x + 1, o)
       O -> (x, o + 1)
       _ -> (x, o)
@@ -267,10 +271,10 @@ hasDupl l g = gridHasLine && lineHasDupl
 
 -- check if the number of X or O has exceeded its limit
 hasBalancedXO :: Line -> Bool
-hasBalancedXO l = (rx <= shouldBe) && (ro <= shouldBe)
+hasBalancedXO l = (x <= maxNum) && (o <= maxNum)
   where
-    (rx, ro) = remainXO l
-    shouldBe = length l `div` 2
+    (x, o) = countXO l
+    maxNum = length l `div` 2
 
 -- check if the grid lines form a triple, duplicate or unbalanced amount of X and Os
 gridIsValid :: Grid -> Bool
