@@ -4,7 +4,7 @@ import Helpers
   ( Cell (..),
     Grid,
     Line,
-    countRemainDot,
+    countDot,
     doOnRowsCols,
     doWhileChanges,
     fillVariants,
@@ -47,9 +47,9 @@ avoidTriple3 l
     combToSpread
       | length validCombs == 1 = head validCombs
       | null invalidCombs = emptySpread
-      | otherwise = mergeCombs $ invertInvalid invalidCombs
+      | otherwise = mergeCombs invertedInvalid
     (validCombs, invalidCombs) = fillVariants l
-    invertInvalid = map (replace charToGuess otherChar . replace otherChar E)
+    invertedInvalid = map (replace charToGuess otherChar . replace otherChar E) invalidCombs
     emptySpread = replicate (rx + ro) E
     (rx, ro) = remainXO l
     (charToGuess, otherChar)
@@ -70,8 +70,8 @@ avoidDuplication g = doWhileChanges (doOnRowsCols mapper) g
   where
     mapper g = map (avoidDupHelp g) g
     avoidDupHelp g l =
-      let remainDots = countRemainDot l
-          valids = fst (fillVariants2 l g)
+      let remainDots = countDot l
+          (valids, _) = fillVariants2 l g
        in if remainDots == 2 && (length valids == 1)
             then spreadOnDots (head valids) l
             else l

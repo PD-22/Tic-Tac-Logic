@@ -23,7 +23,7 @@ import Solvers
 
 -- Rules:
 -- No Triples
--- No Dublicate Lines
+-- No Duplicate Lines
 -- Balanced X O amount
 
 lineSolver :: Line -> Line

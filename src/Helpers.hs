@@ -8,6 +8,7 @@ type Line = [Cell]
 
 type Grid = [Line]
 
+-- check if puzzle input is valid
 inputIsValid :: [String] -> Bool
 inputIsValid g =
   linesHaveSameLength
@@ -22,6 +23,7 @@ inputIsValid g =
     linesHaveSameLength = every (\l -> length l == width) g
     inputGridIsValid = gridIsValid (stringsToGrid g)
 
+-- convert input grid to a grid type
 stringsToGrid :: [String] -> Grid
 stringsToGrid = map lineMapper
   where
@@ -32,6 +34,7 @@ stringsToGrid = map lineMapper
       | char == '.' = E
       | otherwise = N
 
+-- convert grid to string (e.g. for printing)
 gridToStrings :: Grid -> [String]
 gridToStrings = map lineMapper
   where
@@ -42,6 +45,7 @@ gridToStrings = map lineMapper
       | cell == E = '.'
       | otherwise = ' '
 
+-- feed value to the function while producing different result
 doWhileChanges :: Eq t => (t -> t) -> t -> t
 doWhileChanges f oldValue =
   if newValue == oldValue
@@ -50,14 +54,21 @@ doWhileChanges f oldValue =
   where
     newValue = f oldValue
 
+-- apply all functions to the value by chaining them
+applyFunctions :: [t -> t] -> t -> t
+applyFunctions fs v = foldl (\v f -> f v) v fs
+
+-- merge of doWhileChanges and applyFunctions
+applyWhileChanges :: Eq t => [t -> t] -> t -> t
+applyWhileChanges fs = doWhileChanges (applyFunctions fs)
+
+-- transpose grid as matrix
 transpose :: Grid -> Grid
 transpose [] = []
 transpose ([] : _) = []
 transpose m = map head m : transpose (map tail m)
 
-applyFunctions :: [t -> t] -> t -> t
-applyFunctions fs v = foldl (\v f -> f v) v fs
-
+-- return remain Xs and Ox to solve the line
 remainXO :: Line -> (Int, Int)
 remainXO l = (shouldBe - xNum, shouldBe - oNum)
   where
@@ -68,12 +79,16 @@ remainXO l = (shouldBe - xNum, shouldBe - oNum)
       O -> (x, o + 1)
       _ -> (x, o)
 
+-- replace all dots with given cell
 replaceDot :: Cell -> Line -> Line
 replaceDot = replace E
 
+-- replace all As with Bs
 replace :: Eq b => b -> b -> [b] -> [b]
 replace a b = map (\c -> if c == a then b else c)
 
+-- spread comb on list dots
+-- e.g. xoo ..x.xo -> xoxoxo
 spreadOnDots :: Line -> Line -> Line
 spreadOnDots [] l = l
 spreadOnDots _ [] = []
@@ -82,6 +97,7 @@ spreadOnDots rs@(rh : rt) (lh : lt) =
     then rh : spreadOnDots rt lt
     else lh : spreadOnDots rs lt
 
+-- check if line has a triple
 hasTriple :: Line -> Bool
 hasTriple [] = False
 hasTriple [a] = False
@@ -90,74 +106,70 @@ hasTriple (X : X : X : _) = True
 hasTriple (O : O : O : _) = True
 hasTriple (c : cs) = hasTriple cs
 
+-- check if some elt satisfies the function
 some :: Foldable t => (a -> Bool) -> t a -> Bool
 some f = foldr ((||) . f) False
 
+-- check if all elts satisfy the function
 every :: Foldable t => (a -> Bool) -> t a -> Bool
 every f = foldr ((&&) . f) True
 
-fillVariants :: Line -> (Grid, Grid)
-fillVariants l = filter2 isValid (spreadCombs l)
+-- return valid and invalid possible combs to solve the line
+computeFillVariants :: Line -> (Line -> Bool) -> ([[Cell]], [[Cell]])
+computeFillVariants l lineIsValid = filter2 isValid (spreadCombs l)
   where
     isValid c =
       let spreadResult = spreadOnDots c l
-       in not (hasTriple spreadResult)
+       in lineIsValid spreadResult
 
-fillVariants2 :: Line -> Grid -> (Grid, Grid)
-fillVariants2 l g = filter2 isValid (spreadCombs l)
+-- return possible combs by checking if comb makes a triple
+fillVariants :: Line -> ([[Cell]], [[Cell]])
+fillVariants l = computeFillVariants l lineIsValid
+  where lineIsValid = not . hasTriple
+
+-- return possible combs by checking if comb makes a triple or a duplicate
+fillVariants2 :: Line -> Grid -> ([[Cell]], [[Cell]])
+fillVariants2 l g = computeFillVariants l lineIsValid
   where
-    isValid c =
-      let spreadResult = spreadOnDots c l
-       in not (hasTriple spreadResult || makesDupl c)
-    makesDupl c = some (\ol -> linesAreSame ol (spreadOnDots c l)) ols
+    lineIsValid l = not (hasTriple l || makesDupl l)
+    makesDupl l = some (haveSameXOs l) ols
     ols = filter (/= l) g
 
--- returns both filtered and unfiltered elements as tuple
+-- return both filtered and unfiltered elements as tuple
 filter2 :: Foldable t => (a -> Bool) -> t a -> ([a], [a])
 filter2 f = foldr (\cur (a, b) -> if f cur then (cur : a, b) else (a, cur : b)) ([], [])
 
-spreadCombs :: Line -> Grid
+-- get all possible combs to spread on line
+spreadCombs :: Line -> [Line]
 spreadCombs l = let (rx, ro) = remainXO l in combsXO rx ro
 
--- finds correct using char positions (spread) that only invalids have
-{- for example:
-valids = ["xxoxox","xxxoox","xxxoxo"]
-invalids = ["ooxxxx","oxoxxx","oxxoxx","oxxxox","oxxxxo","xooxxx",
-  "xoxoxx","xoxxox","xoxxxo","xxooxx","xxoxxo","xxxxoo"]
-listCommons valids = ["x","x","ox","ox","ox","ox"]
-listCommons inValids = ["ox","ox","ox","ox","ox","ox"]
-result = [[O],[O],[],[],[],[]]
-spread = "xx...." -}
--- TODO:
--- clean code duplication in onlyValidSpread and onlyValidSpread2
+-- find correct spread by inverting chars that only invalids have at that position
+computeValidSpread :: ([Line], [Line]) -> [Cell]
+computeValidSpread getValidsInvalids = map mapHelp onlyInvalidsHave
+  where
+    onlyInvalidsHave = zipWith oneHasOtherNot (listCommons is) (listCommons vs)
+    (vs, is) = getValidsInvalids
+    mapHelp cs = if length cs == 1 then reverseChar (head cs) else E
+    reverseChar c
+      | c == X = O
+      | c == O = X
+      | otherwise = E
+
+-- return only valid spread for line
 onlyValidSpread :: Line -> Line
-onlyValidSpread l = map mapHelp onlyInvalidsHave
-  where
-    onlyInvalidsHave = zipWith oneHasOtherNot (listCommons is) (listCommons vs)
-    (vs, is) = fillVariants l
-    mapHelp cs = if length cs == 1 then reverseChar (head cs) else E
-    reverseChar c
-      | c == X = O
-      | c == O = X
-      | otherwise = E
+onlyValidSpread l = computeValidSpread (fillVariants l)
 
+-- return only valid spread for grid
 onlyValidSpread2 :: Line -> Grid -> Line
-onlyValidSpread2 l g = map mapHelp onlyInvalidsHave
-  where
-    onlyInvalidsHave = zipWith oneHasOtherNot (listCommons is) (listCommons vs)
-    (vs, is) = fillVariants2 l g
-    mapHelp cs = if length cs == 1 then reverseChar (head cs) else E
-    reverseChar c
-      | c == X = O
-      | c == O = X
-      | otherwise = E
+onlyValidSpread2 l g = computeValidSpread (fillVariants2 l g)
 
--- finds elements that are in first list but not in second
+-- find elements that are in first list but not in second
 oneHasOtherNot :: (Foldable t, Eq a) => [a] -> t a -> [a]
 oneHasOtherNot l1 l2 = filter (\c -> every (/= c) l2) l1
 
--- gives info for what characters appear at each position
-listCommons :: Grid -> Grid
+-- give info for what characters appear at each position
+-- e.g. abb aab -> [[a],[b,a],[b]]
+listCommons :: [Line] -> [Line]
 listCommons [] = []
 listCommons [l] = map (: []) l
 listCommons (lh : lt) = foldl foldHelp start lt
@@ -166,83 +178,68 @@ listCommons (lh : lt) = foldl foldHelp start lt
     foldHelp acc cur = zipWith zipHelp acc cur
     zipHelp a b = rmdups (b : a)
 
-mergeCombs :: Grid -> Line
-mergeCombs = replace N E . foldl mergeCombsHelp1 []
+-- same as mergeTwoCombs but merge all combs together
+mergeCombs :: [Line] -> Line
+mergeCombs = replace N E . foldl mergeTwoCombs []
 
-mergeCombsHelp1 :: Line -> Line -> Line
-mergeCombsHelp1 [] b = b
-mergeCombsHelp1 a [] = a
-mergeCombsHelp1 (ah : at) (bh : bt) = mergeCombsHelp2 ah bh : mergeCombsHelp1 at bt
+-- merge two combs to get a comb that will have same spread effect
+mergeTwoCombs :: Line -> Line -> Line
+mergeTwoCombs [] b = b
+mergeTwoCombs a [] = a
+mergeTwoCombs (ah : at) (bh : bt) = mergeCombsCell ah bh : mergeTwoCombs at bt
 
-mergeCombsHelp2 :: Cell -> Cell -> Cell
-mergeCombsHelp2 E a = a
-mergeCombsHelp2 a E = a
-mergeCombsHelp2 a b = if a == b then a else N
+-- merge combs helper
+mergeCombsCell :: Cell -> Cell -> Cell
+mergeCombsCell E a = a
+mergeCombsCell a E = a
+mergeCombsCell a b = if a == b then a else N
 
-combsXO :: Int -> Int -> Grid
+-- returns all possible spread combs for given remaining Xs and Os
+combsXO :: Int -> Int -> [Line]
 combsXO xn on = rearrangeCombs (replicate xn X ++ replicate on O)
 
-rearrangeCombs :: Line -> Grid
+-- combsXO helper for making all possible combinations of a list
+rearrangeCombs :: Ord a => [a] -> [[a]]
 rearrangeCombs [c] = [[c]]
 rearrangeCombs l = rmdups $ concatMap mapHelp l
   where
     mapHelp c = map (c :) (rearrangeCombs (removeFirst c l))
 
+-- removest first elt that equals to given elt
 removeFirst :: Eq t => t -> [t] -> [t]
 removeFirst _ [] = []
 removeFirst c (sh : st) = if c == sh then st else sh : removeFirst c st
 
+-- removes duplicate elts of list by sorting it first
 rmdups :: (Ord a) => [a] -> [a]
 rmdups = rmdupsSorted . sort
 
+-- rmdups helper that only removes dups from sorted list
 rmdupsSorted :: Eq a => [a] -> [a]
 rmdupsSorted [] = []
 rmdupsSorted (lh : lt) = lh : rmdupsSorted (rmTill lh lt)
 
+-- removes elt untill it equals to the given elt
 rmTill :: Eq t => t -> [t] -> [t]
 rmTill c [] = []
 rmTill c l@(lh : lt) = if lh == c then rmTill c lt else l
 
--- ? maybe merge
-countRemainDot :: Line -> Int
-countRemainDot l = rx + ro
-  where
-    (rx, ro) = remainXO l
-
+-- count empty cells in a line
 countDot :: Line -> Int
 countDot = foldl (\a c -> a + if c == E then 1 else 0) 0
 
+-- count empty cells in a grid
+countDot2 :: Grid -> Int
+countDot2 = foldl (\a b -> a + countDot b) 0
+
+-- apply function to rows and cols of the grid by transposing it twice
 doOnRowsCols :: (Grid -> Grid) -> Grid -> Grid
 doOnRowsCols f g = transpose $ f $ transpose $ f g
 
+-- replace first occurrence of elt by another elt
 replaceFirst :: Eq t => t -> t -> [t] -> [t]
 replaceFirst _ _ [] = []
 replaceFirst c1 c2 (a : as) = if a == c1 then c2 : as else a : replaceFirst c1 c2 as
-
--- True if they have same x and o positions
-linesAreSame :: Line -> Line -> Bool
-linesAreSame l1 l2 = and sameCharZip
-  where
-    sameCharZip = zipWith charZipper l1 l2
-    charZipper a b = not (a == E || b == E) && (a == b)
-
--- takes a line and grid that has the line
-hasDupl :: Line -> Grid -> Bool
-hasDupl l g = gridHasLine && lineHasDupl
-  where
-    gridHasLine = some (linesAreSame l) g
-    lineHasDupl = duplCount > 1
-    duplCount = foldl countFolder 0 g
-    countFolder acc cur = acc + (if linesAreSame cur l then 1 else 0)
-
-hasBalancedXO :: Line -> Bool
-hasBalancedXO l = (rx <= shouldBe) && (ro <= shouldBe)
-  where
-    (rx, ro) = remainXO l
-    shouldBe = length l `div` 2
-
-countDot2 :: Grid -> Int
-countDot2 = foldl (\a b -> a + countDot b) 0
 
 -- same as replaceFirst but operates on whole grid
 replaceFirst2 :: Cell -> Cell -> Grid -> Grid
@@ -252,14 +249,36 @@ replaceFirst2 c1 c2 (l : ls) = if didReplace then nl : ls else l : replaceFirst2
     didReplace = nl /= l
     nl = replaceFirst c1 c2 l
 
+-- check if lines have same x and o positions
+haveSameXOs :: Line -> Line -> Bool
+haveSameXOs l1 l2 = and sameCharZip
+  where
+    sameCharZip = zipWith charZipper l1 l2
+    charZipper a b = not (a == E || b == E) && (a == b)
+
+-- check if line is a duplicate in its graph
+hasDupl :: Line -> Grid -> Bool
+hasDupl l g = gridHasLine && lineHasDupl
+  where
+    gridHasLine = some (haveSameXOs l) g
+    lineHasDupl = duplCount > 1
+    duplCount = foldl countFolder 0 g
+    countFolder acc cur = acc + (if haveSameXOs cur l then 1 else 0)
+
+-- check if the number of X or O has exceeded its limit
+hasBalancedXO :: Line -> Bool
+hasBalancedXO l = (rx <= shouldBe) && (ro <= shouldBe)
+  where
+    (rx, ro) = remainXO l
+    shouldBe = length l `div` 2
+
+-- check if the grid lines form a triple, duplicate or unbalanced amount of X and Os
 gridIsValid :: Grid -> Bool
 gridIsValid g = rowsAreValid g && rowsAreValid (transpose g)
   where
     rowsAreValid rs = foldl (\b l -> b && lineIsValid l rs) True rs
     lineIsValid l rs = not (hasTriple l || hasDupl l rs) && hasBalancedXO l
 
-applyWhileChanges :: Eq t => [t -> t] -> t -> t
-applyWhileChanges fs = doWhileChanges (applyFunctions fs)
-
+-- check if grid does not have empty cells left
 gridIsFilled :: Grid -> Bool
 gridIsFilled g = countDot2 g == 0
