@@ -9,12 +9,18 @@ type Line = [Cell]
 type Grid = [Line]
 
 inputIsValid :: [String] -> Bool
-inputIsValid g = linesHaveSameLength && even width && even height && hasOnlyXODot
+inputIsValid g =
+  linesHaveSameLength
+    && even width
+    && even height
+    && hasOnlyXODot
+    && inputGridIsValid
   where
     height = length g
     width = length (head g)
     hasOnlyXODot = every (every (\c -> some (== c) "XOxo.")) g
     linesHaveSameLength = every (\l -> length l == width) g
+    inputGridIsValid = gridIsValid (stringsToGrid g)
 
 stringsToGrid :: [String] -> Grid
 stringsToGrid = map lineMapper
@@ -254,3 +260,6 @@ gridIsValid g = rowsAreValid g && rowsAreValid (transpose g)
 
 applyWhileChanges :: Eq t => [t -> t] -> t -> t
 applyWhileChanges fs = doWhileChanges (applyFunctions fs)
+
+gridIsFilled :: Grid -> Bool
+gridIsFilled g = countDot2 g == 0

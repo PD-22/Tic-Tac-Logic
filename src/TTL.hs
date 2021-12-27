@@ -7,6 +7,7 @@ import Helpers
     applyWhileChanges,
     countDot2,
     doOnRowsCols,
+    gridIsFilled,
     gridIsValid,
     replaceFirst2,
   )
@@ -41,13 +42,22 @@ techSolver = applyWhileChanges [gridLineSolver, avoidDuplication, advancedTech2]
     gridLineSolver = doOnRowsCols (map lineSolver)
 
 gridSolver :: Grid -> Grid
-gridSolver og = if isFilled g then g else bruteForce
+gridSolver g = gridSolverRec g True
+
+gridSolverRec :: Grid -> Bool -> Grid
+gridSolverRec og b =
+  if gridIsFilled g
+    then g
+    else bruteForce g (not b)
   where
     g = techSolver og
-    bruteForce
-      | gridIsValid xWay = xWay
-      | gridIsValid oWay = oWay
-      | otherwise = g
-    xWay = gridSolver (replaceFirst2 E X g)
-    oWay = gridSolver (replaceFirst2 E O g)
-    isFilled g = countDot2 g == 0
+
+bruteForce :: Grid -> Bool -> Grid
+bruteForce g b
+  | gridIsValid way1 && gridIsFilled way1 = way1
+  | gridIsValid way2 && gridIsFilled way2 = way2
+  | otherwise = g
+  where
+    (way1, way2) = if b then (xWay, oWay) else (oWay, xWay)
+    xWay = gridSolverRec (replaceFirst2 E X g) b
+    oWay = gridSolverRec (replaceFirst2 E O g) b
