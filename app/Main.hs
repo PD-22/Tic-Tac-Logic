@@ -1,16 +1,21 @@
 module Main where
 
 import Control.Monad (unless)
-import Helpers (gridIsValid, gridToStrings, inputIsValid, stringsToGrid)
+import Helpers (gridIsValid, gridToStrings, inputIsValid, stringsToGrid, parseRowCol)
 import TTL (gridSolver)
 
 main :: IO ()
 main = do
   input <- getContents
-  let grid = stringsToGrid (lines input)
+  let inputLines = lines input
+
+  let (rows, cols) = parseRowCol (head inputLines)
+  let grid = stringsToGrid (tail inputLines)
+
   let solution = gridSolver grid
   let output = unlines (gridToStrings solution)
-  if inputIsValid (lines input)
+  
+  if inputIsValid inputLines
     then
       if gridIsValid solution
         then putStrLn output

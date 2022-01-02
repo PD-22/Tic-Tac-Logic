@@ -10,18 +10,23 @@ type Grid = [Line]
 
 -- check if puzzle input is valid
 inputIsValid :: [String] -> Bool
-inputIsValid g =
+inputIsValid inputLines =
   linesHaveSameLength
-    && even width
-    && even height
+    && even cols
+    && even rows
     && hasOnlyXODot
     && inputGridIsValid
+    && rowColMatches
   where
+    rowColLines = head inputLines
+    g = tail inputLines
     height = length g
     width = length (head g)
     hasOnlyXODot = every (every (\c -> some (== c) "XOxo.")) g
-    linesHaveSameLength = every (\l -> length l == width) g
+    linesHaveSameLength = every (\l -> length l == length (head g)) g
     inputGridIsValid = gridIsValid (stringsToGrid g)
+    (rows, cols) = parseRowCol rowColLines
+    rowColMatches = height == rows && width == cols
 
 -- convert input grid to a grid type
 stringsToGrid :: [String] -> Grid
@@ -129,7 +134,8 @@ computeFillVariants l lineIsValid = filter2 isValid (spreadCombs l)
 -- return possible combs by checking if comb makes a triple
 fillVariants :: Line -> ([[Cell]], [[Cell]])
 fillVariants l = computeFillVariants l lineIsValid
-  where lineIsValid = not . hasTriple
+  where
+    lineIsValid = not . hasTriple
 
 -- return possible combs by checking if comb makes a triple or a duplicate
 fillVariants2 :: Line -> Grid -> ([[Cell]], [[Cell]])
@@ -286,3 +292,8 @@ gridIsValid g = rowsAreValid g && rowsAreValid (transpose g)
 -- check if grid does not have empty cells left
 gridIsFilled :: Grid -> Bool
 gridIsFilled g = countDot2 g == 0
+
+parseRowCol :: String -> (Int, Int)
+parseRowCol str = (rows, cols)
+  where
+    [rows, cols] = map (\s -> (read s :: Int)) (words str)
