@@ -22,108 +22,75 @@ OOXXOX
 XXOXOO
 ```
 
-#### Task description:
-```txt
-შესრულებული მოთხოვნები
-  მთავარი მოთხოვნები
-    პირველი 4 ტექნიკა (Basic Techniques)
-    გადარჩევით ძებნა
-  დამატებითი მოთხოვნები
-    Basic technique 5
-    Advanced technique 1
-    Advanced technique 2
+**Completed Requirements:**
+- **Main Requirements:**
+  - First 4 techniques (Basic Techniques)
+  - Brute-force search
+- **Additional Requirements:**
+  - Basic technique 5
+  - Advanced technique 1
+  - Advanced technique 2
 
-Main.hs
-  იღებს გადაცემულ string-ების მასივს
-  თუ input ვალიდურია გადააკონვერტირებს Helpers.hs-ში აღწერილ grid-ად
-  Grid-ის თითოეული უჯრა შეიძლება იყოს X, O, ცარიელი E (წერტილი), ან უცნობი N (რატომ არ ვიცი)
-  grid გადაეცემა TTL.hs-ში აღწერილ gridSolvers
-  თუ gridSolver-მა წარმატებით ამოხსნა დააბრუნებს ამონახსნს
-  წინააღმდეგ შემთხვევაში გვიწერს, input იყო არავალიდური, ან ამონახსნი არაა აქვს
+**Main.hs:**
+- Accepts an array of passed strings.
+- If the input is valid, it converts it to a grid described in Helpers.hs.
+- Each cell of the grid can be X, O, empty E (dot), or unknown N (why, I don’t know).
+- The grid is passed to the gridSolvers described in TTL.hs.
+- If the gridSolver successfully solves it, it returns the solution.
+- Otherwise, it writes that the input was invalid, or no solution exists.
 
-TTL.hs
-  gridSolver
-    ხსნის ტექნიკების (techSolver) გამოყენებით, თუ დაფა არ შეივსო სვამს ერთ სიმბოლოს გადარჩევით (bruteForce)
-    techSolver
-      5 ტექნიკა (lineSolver) მუშაობს მხოლოდ ზოლებზე და იმაპება თითოეულ ზოლზე
-      2 ტექნიკას (avoidDuplication, advancedTech2) სჭირდება სხვა ზოლების ცოდნაც და იმაპება მთელს დაფაზე
-      ეს ტექნიკები გამოიყენება სანამ დაფა იცვლება
-      სვეტებზე სამოქმედოდ doOnRowsCols იყენებს transpose ფუნქციას
-    bruteForce
-      Bool არგუმენტი არის რათა რიგრიგობით სცადოს X და O
-      dfs-ით ცდილობს ჯერ X-ის მერე O-ის რიგრიგობით ჩასმას პირველივე უჯრაში
-      თუ დაფა არავალიდურია ან ვერ შეივსო უბრუნდება წინა ვერსიას და ცდილობს მეორეს ჩასმას
+**TTL.hs:**
+- **gridSolver** uses techniques (techSolver). If the board is not filled, it places a symbol via brute force.
+- **techSolver:**
+    - The 5th technique (lineSolver) works only on rows and scans each row.
+    - The 2nd technique (avoidDuplication, advancedTech2) needs knowledge of other rows and scans the entire board.
+    - These techniques are used as long as the board changes.
+    - For columns, `doOnRowsCols` uses the transpose function.
+- **bruteForce:**  
+    The Boolean argument is used to try X and O sequentially. It attempts to place X first, then O, in the first available cell.  
+    If the board is invalid or cannot be filled, it reverts to the previous version and attempts to place the second symbol.
 
-Solvers.hs
-  avoidTriple1
-    pattern matching-ით ეძებს ორ ერთნაირ სიმბოლოს გვერდიგვერდ და სვამს საპირისპიროს მათ გვერდებზე
-  avoidTriple2
-    pattern matching-ით ეძებს ორ ერთნაირ სიმბოლოს ერთი უჯრის დაშორებით და სვამს საპირისპიროს მათ შუაში
-  avoidTriple3
-    remainXO-ს საშუალებით ვიგებთ რამდენი X და O დაგვრჩა ჩასასმელი ზოლში
-    ტექნიკა მოქმედებს, როცა ზოლში გვაქს ერთი X (O) და ერთზე მეტი O (X) ჩასასმელი 
-    ჩასასმელი სიმბოლო, რომელიც ერთი გვაქვს აღნიშნულია charToGuess-ით ხოლო მეორე otherChar-ით
-    მიღებული ზოლის წერტილებზე ფუნქციამ უნდა და-spread-ოს რამე კომბინაცია, რომელიც უეჭველად სწორია
-      კომბინაცია არის ყველა შესაძლო სიმბოლოს თანმიმდევრობა, რომელიც შესაძლოა დაი-spread-ოს ზოლზე
-      მაგალითად: spreadOnDot [X,O,O] [O,E,X,E,X,E] == [O,X,X,O,X,O]
-    fillVariants-ის საშუალებით ვიგებთ ვალიდურ და არავალიდურ კომბინაციებს
-      რომლებიც არ ქმნიან სამიანებს (XXX, OOO)
-    თუ ვალიდური კომბინაციებიდან მხოლოდ ერთი გვაქვს, ესე იგი მხოლოდ ერთი ამონახნსი აქვს და ვსვამთ მაგას
-    თუ მხოლოდ არავალიდური კომბინაციები გვაქს ვაკეთებთ შემდეგს
-      გვინდა, ყველაგან, სადაც charToGuess X (O) ვერ ჩაისმევა, ჩავსვათ საპირისპირო - O (X)
-      ყველა კომბინაციას ვუკეთებთ invert-ს
-        ვითვალისწინებთ, რომ თუ უჯრაში ერთი დარჩენილი X (O) არ ისმევა, აუცილებლად ჩაისმევა O (X)
-        charToGuess-ს, რომელიც ერთი გვაქს ვცვლით საპირისპიროთი, ხოლო დანარჩენს ცარიელით
-      არავალიდურ inverted კომბინაციებს ვაერთიანებთ merge-ით და ვუკეთებთ spread-ს ზოლის წერტილებზე
-  completeLine
-    ვითვალისწინებთ, რომ X-ებისა და O-ის რაოდენობა უნდა იყოს ტოლი
-    remainXO-თი ვიგებთ რამდენი X და O დარჩა ჩასასმელი და ვსვავთ რომელიც დაგვრჩა (არ უდრის ნულს)
-  avoidDuplication
-    ტექნიკა მოქმედებს მთლიან დაფაზე, და როცა ზოლში დაგვრჩა ორი უჯრა შესავსები
-    სანამ დაფა იცვლება სტრიქონებსა და სვეტებზე კეთდება შემდეგი
-      fillVariants2-ის საშუალებით ვიგებთ ვალიდურ და არავალიდურ კომბინაციებს, spread-ისთვის
-        აბრუნებს კომბინაციებს (valid, invalid) რომლებიც არ ქმნიან სამიანებსა (XXX, OOO) და დუპლიკატებს
-      თუ ვალიდური მხოლოდ ერთი ვარიანტია, ესე იგი, ვუკეთებთ spread-ს მაგ კომბინაციით
-  avoidTech1
-    ტექნიკა მოქმედებს, როცა ზოლში დარჩენილია შესავსები მხოლოდ ორი X (O) და ორზე მეტი O (X)
-    onlyValidSpread-ით ვიგებთ, თითოეულ უჯრაში რა უნდა ჩაისვას აუცილებლად, რათა ავირიდოთ სამიანები
-      fillVariants-ით ვიგებთ, შესაძლო ვალიდურ და არავალიდურ კომბინაციებს
-      listCommons-ით ვიგებთ, list-ებიდან რა სიმბოლო გვხვდება თითოეულ პოზიციაზე
-      oneHasOtherNot-ით ვიგებთ, რა აქვს მხოლოდ ერთ ლისტს და არა - მეორეს
-      ამ helper-ების დახმარებით, ვიგებთ, თითოეულ ცარიელ უჯრაში რა არის ერთადერთი შესაძლო ჩასმა
-        თითოეულ უჯრაში ვიგებთ, თუ გვაქვს სიმბოლო, რომელიც აქ მხოლოდ არავალიდურ ვარიანტებს გვაძლევ
-        თუ ამ უჯრაში X (O) გვხვდება მხოლოდ არავალიდურებში, ესე იგი, უნდა ჩავსვათ O (X)
-    მაგალითი
-      l = [O,E,E,O,E,E,X,E,E,O]
-      (vs, is) = fillVariants l
-      valids = [[X,X,X,O,X,O],[X,X,X,O,O,X],[X,X,O,X,O,X]]
-      invalids = [
-        [X,X,X,X,O,O],[X,X,O,X,X,O],[X,X,O,O,X,X],[X,O,X,X,X,O],[X,O,X,X,O,X],[X,O,X,O,X,X],
-        [X,O,O,X,X,X],[O,X,X,X,X,O],[O,X,X,X,O,X],[O,X,X,O,X,X],[O,X,O,X,X,X],[O,O,X,X,X,X]
-      ]
-      listCommons invalids = [[X,O],[X,O],[X,O],[X,O],[X,O],[X,O]]
-      listCommons valids = [[X],[X],[X,O],[X,O],[X,O],[X,O]]
-      zipped = zipWith oneHasOtherNot (listCommons invalids) (listCommons valids) = [[O],[O],[],[],[],[]]
-      spreadComb = map (\cs -> if length cs == 1 then reverseChar (head cs) else E) zipped
-      spreadComb = [X,X,E,E,E,E]
-      spread spreadComb l = [O,X,X,O,E,E,X,E,E,O]
-      o..o..x..o -> oxxo..x..o
-  avoidTech2
-    avoidDuplication-ივით მოქმედებს მთლიან დაფაზე, ოღონდ როცა უმცირესი დარჩენილი სიმბოლო ერთია
-      გადაუვლის ყველა სტრიქონსა და სვეტს სანამ შეუძლია შეცვალოს დაფა
-    avoidTech1-ივით იყენებს onlyValidSpread-ს, ოღონდ განახლებულ ვერსიას
-      onlyValidSpread2 ითვალისწინებს დუპლიკატებსაც
-      ისევ ეძებს სიმბოლოს რომელიც ამ პოზიციაზე გვხვდება მხოლოდ არავალიდურებში და ანაცვლებს პირიქით
+**Solvers.hs:**
+- **avoidTriple1:** Uses pattern matching to look for two identical symbols side by side and places the opposite symbol next to them.
+- **avoidTriple2:** Uses pattern matching to find two identical symbols one cell apart and places the opposite symbol between them.
+- **avoidTriple3:** Through `remainXO`, determines how many X's and O's remain to be placed in the row.  
+    The technique is used when there is one X (O) and more than one O (X) to be placed.  
+    The symbol that has one remaining is marked by `charToGuess`, and the other symbol by `otherChar`.  
+    The function should then spread a combination that is guaranteed to be correct.
+    - The combination is the sequence of all possible symbols that can be spread across the row.
+    - Example: `spreadOnDot [X,O,O] [O,E,X,E,X,E] == [O,X,X,O,X,O]`
+    - `fillVariants` helps determine valid and invalid combinations.
+    - If only one valid combination remains, it is placed.
+    - If only invalid combinations are available, we try the following:
+        - We want to place the opposite symbol (O or X) wherever `charToGuess` cannot be placed.
+        - We invert all combinations.
+        - If one remaining X (O) cannot be placed in a cell, the opposite symbol (O or X) must be placed instead.
+        - We merge invalid inverted combinations and spread them across the row's cells.
+- **completeLine:**  
+    We ensure that the number of X's and O's must be equal.  
+    With `remainXO`, we find how many X's and O's remain to be placed and place the one that is left (if it’s not zero).
+- **avoidDuplication:**  
+    This technique works across the entire board when there are two cells left to fill in a row.  
+    It uses `fillVariants2` to find valid and invalid combinations for spreading.  
+    If only one valid combination exists, it spreads it.
+- **avoidTech1:**  
+    This technique applies when there are only two X's (O) left in a row, and more than one O (X).  
+    With `onlyValidSpread`, it determines what must be placed in each cell to avoid triples.  
+    Using helpers like `fillVariants`, `listCommons`, and `oneHasOtherNot`, we determine the only possible placement for each empty cell.
 
-Helpers.hs
-  კოდში თითოეულ ფუნქციას აქვს აღწერა კომენრტარის სახით
+- **avoidTech2:**  
+    Similar to `avoidDuplication` across the entire board but applies when there is only one remaining symbol.  
+    It passes through all rows and columns to change the board as needed.  
+    Similar to `avoidTech1`, it uses an updated version of `onlyValidSpread`, which accounts for duplicates.
 
-დამატებითი ბიბლიოთეკები
-  გამოყენებულია მხოლოდ სორტის ფუნქციის გარდა
+**Helpers.hs:**
+- Each function in the code has a description in the form of a comment.
 
-input-ში არ სჭირდება სვეტებისა და სტრიქონების რაოდენობის მითითება
+**Additional Libraries:**
+- Only the sort function is used from external libraries.
 
-სისწორესა და წარმადობაში დავრწმუნდი ამის შემდეგ
-  ფუნქციების ცალ ცალკე გაანალიზება და მაგალითებზე შემოწმება
-  conceptispuzzles-ის აპლიკაციაში მარავალი რთული პაზლების ამოხსნა
-```
+**The input does not require specifying the number of rows and columns.**
+
+After ensuring accuracy and performance:
+- The functions were analyzed individually and checked with examples.
+- Solving several complex puzzles in the Conceptis Puzzles application.
